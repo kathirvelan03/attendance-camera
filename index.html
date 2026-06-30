@@ -3,120 +3,238 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Attendance Camera Capture</title>
-  <!-- Google Fonts: Outfit -->
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+  <title>Camera Capture - Office Attendance</title>
+  <!-- Google Fonts: Outfit (matches main app) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
   <style>
+    /* ==========================================================================
+       CSS Custom Properties & Palette Configuration (mirrors main app Styles.html)
+       ========================================================================== */
     :root {
-      --bg-dark: #0f172a;
-      --card-bg: rgba(30, 41, 59, 0.7);
-      --border-color: rgba(51, 65, 85, 0.5);
-      --primary: #6366f1;
-      --primary-hover: #4f46e5;
-      --success: #10b981;
+      --bg-main: #f8fafc;
+      --card-bg: rgba(255, 255, 255, 0.8);
+      --border-color: rgba(226, 232, 240, 0.8);
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+
+      --color-primary: #4f46e5;
+      --color-primary-hover: #4338ca;
+      --color-primary-glow: rgba(79, 70, 229, 0.15);
+
+      --color-success: #059669;
+      --color-success-bg: rgba(5, 150, 105, 0.1);
+      --color-error: #dc2626;
+      --color-error-bg: rgba(220, 38, 38, 0.1);
+
+      --gradient-accent: linear-gradient(135deg, #6366f1, #4f46e5);
+
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+      --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.04);
+
+      --glass-blur: 16px;
+      --border-radius-sm: 8px;
+      --border-radius-md: 16px;
+      --border-radius-lg: 24px;
+
+      --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    
-    body {
-      font-family: 'Outfit', sans-serif;
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-main: #0b0f19;
+        --card-bg: rgba(17, 24, 39, 0.7);
+        --border-color: rgba(31, 41, 55, 0.7);
+        --text-primary: #f8fafc;
+        --text-secondary: #cbd5e1;
+        --text-muted: #64748b;
+
+        --color-primary: #6366f1;
+        --color-primary-hover: #4f46e5;
+        --color-primary-glow: rgba(99, 102, 241, 0.25);
+
+        --color-success: #34d399;
+        --color-success-bg: rgba(52, 211, 153, 0.1);
+        --color-error: #f87171;
+        --color-error-bg: rgba(248, 113, 113, 0.1);
+
+        --gradient-accent: linear-gradient(135deg, #4f46e5, #6366f1);
+        --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
       margin: 0;
       padding: 0;
-      background-color: var(--bg-dark);
-      color: #f8fafc;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      overflow: hidden;
     }
-    
+
+    body {
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      transition: background-color 0.4s ease, color 0.4s ease;
+    }
+
+    /* Glassmorphism Background Blobs (matches main app) */
+    .bg-blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(90px);
+      z-index: -2;
+      pointer-events: none;
+      opacity: 0.35;
+    }
+
+    .blob-1 {
+      width: 320px;
+      height: 320px;
+      background: radial-gradient(circle, rgba(99,102,241,0.6) 0%, rgba(79,70,229,0) 70%);
+      top: -10%;
+      left: -15%;
+    }
+
+    .blob-2 {
+      width: 360px;
+      height: 360px;
+      background: radial-gradient(circle, rgba(16,185,129,0.4) 0%, rgba(5,150,105,0) 70%);
+      bottom: -15%;
+      right: -15%;
+    }
+
+    /* ==========================================================================
+       Capture Card
+       ========================================================================== */
     .camera-container {
-      width: 90%;
-      max-width: 500px;
+      width: 92%;
+      max-width: 440px;
       background: var(--card-bg);
       border: 1px solid var(--border-color);
-      border-radius: 20px;
+      border-radius: var(--border-radius-lg);
       padding: 24px;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+      box-shadow: var(--shadow-lg), var(--shadow-glass);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
       text-align: center;
-      backdrop-filter: blur(16px);
       position: relative;
+      z-index: 1;
     }
-    
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .logo-icon {
+      width: 24px;
+      height: 24px;
+      color: var(--color-primary);
+    }
+
     h1 {
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 700;
-      margin-top: 0;
-      margin-bottom: 8px;
-      background: linear-gradient(135deg, #818cf8, #6366f1);
+      letter-spacing: -0.3px;
+      background: var(--gradient-accent);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-    
-    p {
+
+    p.subtitle {
       font-size: 13px;
-      color: #94a3b8;
+      color: var(--text-secondary);
       margin-bottom: 20px;
     }
-    
+
+    /* Live status pill */
+    .status-blink-container {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--color-error-bg);
+      padding: 4px 10px;
+      border-radius: 50px;
+      border: 1px solid var(--border-color);
+      margin-bottom: 14px;
+    }
+
+    .blink-dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--color-error);
+      border-radius: 50%;
+      display: inline-block;
+      animation: blinker 1.2s cubic-bezier(0.5, 0, 1, 1) infinite alternate;
+    }
+
+    .blink-text {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--color-error);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    @keyframes blinker {
+      from { opacity: 1; }
+      to { opacity: 0.2; }
+    }
+
+    /* Viewport */
     .viewport {
       position: relative;
       width: 100%;
       aspect-ratio: 4 / 3;
       background: #000;
-      border-radius: 12px;
+      border-radius: var(--border-radius-md);
       overflow: hidden;
       border: 1px solid var(--border-color);
       display: flex;
       justify-content: center;
       align-items: center;
+      box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.8);
     }
-    
+
     video {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transform: scaleX(-1); /* Mirror view */
-    }
-    
-    .btn-capture {
-      margin-top: 24px;
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      background: #fff;
-      border: 6px solid var(--primary);
-      cursor: pointer;
-      position: relative;
-      transition: all 0.2s ease-in-out;
-      outline: none;
-      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
-    }
-    
-    .btn-capture::after {
-      content: '';
-      position: absolute;
-      top: 4px;
-      left: 4px;
-      right: 4px;
-      bottom: 4px;
-      background: #fff;
-      border-radius: 50%;
-      transition: all 0.2s ease-in-out;
-    }
-    
-    .btn-capture:hover {
-      transform: scale(1.08);
-      border-color: var(--primary-hover);
-      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
-    }
-    
-    .btn-capture:active::after {
-      background: var(--success);
-      transform: scale(0.85);
+      transform: scaleX(-1);
     }
 
-    /* Flash animation when capture is clicked */
+    .viewport-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      color: #94a3b8;
+      padding: 24px;
+    }
+
+    .viewport-placeholder svg {
+      width: 48px;
+      height: 48px;
+      color: #475569;
+    }
+
+    .viewport-placeholder p {
+      font-size: 13px;
+      font-weight: 500;
+      max-width: 220px;
+    }
+
     .flash-overlay {
       position: absolute;
       top: 0;
@@ -133,57 +251,157 @@
       animation: flash 0.3s ease-out;
     }
 
-    body.embedded-mode {
-      min-height: 100%;
-      height: 100%;
-    }
-    body.embedded-mode .camera-container {
-      width: 100%;
-      height: 100%;
-      max-width: 100%;
-      border: none;
-      border-radius: 0;
-      box-shadow: none;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-    body.embedded-mode h1,
-    body.embedded-mode p {
-      display: none;
-    }
-
     @keyframes flash {
       0% { opacity: 1; }
       100% { opacity: 0; }
+    }
+
+    /* Shutter button — styled like the main app's primary action */
+    .btn-capture {
+      margin-top: 24px;
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: var(--gradient-accent);
+      border: 4px solid var(--card-bg);
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+      cursor: pointer;
+      position: relative;
+      transition: var(--transition-smooth);
+      box-shadow: 0 4px 14px 0 var(--color-primary-glow);
+    }
+
+    .btn-capture::after {
+      content: '';
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      right: 6px;
+      bottom: 6px;
+      background: #fff;
+      border-radius: 50%;
+      opacity: 0.15;
+      transition: var(--transition-smooth);
+    }
+
+    .btn-capture:hover {
+      transform: translateY(-1px) scale(1.04);
+      box-shadow: 0 6px 20px 0 var(--color-primary-glow);
+      filter: brightness(1.08);
+    }
+
+    .btn-capture:active::after {
+      background: var(--color-success);
+      opacity: 0.4;
+      transform: scale(0.85);
+    }
+
+    .btn-capture:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .hint-text {
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Close button */
+    .close-btn {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition-smooth);
+    }
+
+    .close-btn:hover {
+      background: var(--border-color);
+      color: var(--text-primary);
+    }
+
+    /* Error state text inside viewport */
+    .error-text {
+      color: var(--color-error);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 0 16px;
     }
   </style>
 </head>
 <body>
 
+  <div class="bg-blob blob-1"></div>
+  <div class="bg-blob blob-2"></div>
+
   <div class="camera-container">
-    <h1>Webcam Capture</h1>
-    <p>Please align your face inside the frame and take a selfie.</p>
-    
-    <div class="viewport">
-      <video id="webcam" autoplay playsinline></video>
+    <button class="close-btn" id="closeBtn" aria-label="Close camera">&times;</button>
+
+    <div class="card-header">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        <path d="m9 12 2 2 4-4"/>
+      </svg>
+      <h1>Capture Selfie</h1>
+    </div>
+    <p class="subtitle">Align your face inside the frame and tap the shutter.</p>
+
+    <div class="status-blink-container" id="statusBlink" style="display: none;">
+      <span class="blink-dot"></span>
+      <span class="blink-text">Live</span>
+    </div>
+
+    <div class="viewport" id="viewport">
+      <video id="webcam" autoplay playsinline style="display: none;"></video>
+
+      <div class="viewport-placeholder" id="placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+        <p id="placeholderText">Requesting camera access...</p>
+      </div>
+
       <div class="flash-overlay" id="flash"></div>
     </div>
-    
-    <button class="btn-capture" id="shutterBtn" aria-label="Take Photo"></button>
+
+    <button class="btn-capture" id="shutterBtn" aria-label="Take Photo" disabled></button>
+    <div class="hint-text">Tap the button to capture and submit your photo</div>
+
     <canvas id="canvas" style="display: none;"></canvas>
   </div>
 
   <script>
-    if (window.self !== window.top) {
-      document.body.classList.add('embedded-mode');
-    }
     const video = document.getElementById('webcam');
     const shutterBtn = document.getElementById('shutterBtn');
     const canvas = document.getElementById('canvas');
     const flash = document.getElementById('flash');
-    
+    const placeholder = document.getElementById('placeholder');
+    const placeholderText = document.getElementById('placeholderText');
+    const statusBlink = document.getElementById('statusBlink');
+    const closeBtn = document.getElementById('closeBtn');
+
     let activeStream = null;
+
+    closeBtn.addEventListener('click', () => {
+      if (activeStream) {
+        activeStream.getTracks().forEach(track => track.stop());
+      }
+      window.close();
+    });
 
     // 1. Initialize Camera immediately on page load
     navigator.mediaDevices.getUserMedia({
@@ -197,56 +415,60 @@
     .then((stream) => {
       activeStream = stream;
       video.srcObject = stream;
+      video.style.display = 'block';
+      placeholder.style.display = 'none';
+      statusBlink.style.display = 'inline-flex';
+      shutterBtn.disabled = false;
     })
     .catch((err) => {
       console.error("Camera access error:", err);
-      alert("Error: Camera access was denied or is unavailable. Please check website permissions.");
-      window.close();
+      placeholderText.textContent = "Camera access denied or unavailable. Please check website permissions.";
+      placeholderText.classList.add('error-text');
+      placeholder.style.display = 'flex';
     });
 
     // 2. Capture Action
     shutterBtn.addEventListener('click', () => {
       if (!activeStream) return;
-      
+
       // Trigger flash effect
       flash.classList.add('flash-active');
       setTimeout(() => flash.classList.remove('flash-active'), 300);
 
       const width = video.videoWidth || 640;
       const height = video.videoHeight || 480;
-      
+
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext('2d');
-      
+
       // Mirror image output
       ctx.translate(width, 0);
       ctx.scale(-1, 1);
       ctx.drawImage(video, 0, 0, width, height);
-      
+
       const base64Data = canvas.toDataURL('image/jpeg', 0.85);
 
       // Stop stream tracks
       activeStream.getTracks().forEach(track => track.stop());
+      shutterBtn.disabled = true;
 
-      // 3. Send image back to whichever context launched us (popup or iframe)
-      const isEmbedded = window.self !== window.top;
-      const targetWindow = window.opener || (isEmbedded ? window.parent : null);
-      
-      if (targetWindow) {
-        targetWindow.postMessage({
+      // 3. Send image back to parent window and close popup
+      if (window.opener) {
+        window.opener.postMessage({
           type: 'CAMERA_CAPTURE_SUCCESS',
           image: base64Data
         }, '*');
-      
-        if (window.opener) {
-          // Running as a popup — close it after the shutter animation
-          setTimeout(() => window.close(), 200);
-        }
-        // If embedded as an iframe, the parent page swaps us out — nothing more to do.
+
+        // Auto close after 200ms so they see the shutter press complete
+        setTimeout(() => {
+          window.close();
+        }, 200);
       } else {
-        alert("Parent window not found. Please launch from the Office Attendance App.");
-        if (window.opener) window.close();
+        placeholderText.textContent = "Parent window not found. Please launch this page from the Office Attendance App.";
+        placeholderText.classList.add('error-text');
+        video.style.display = 'none';
+        placeholder.style.display = 'flex';
       }
     });
   </script>
