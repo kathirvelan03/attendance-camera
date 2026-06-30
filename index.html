@@ -155,6 +155,9 @@
   </div>
 
   <script>
+    if (window.self !== window.top) {
+      document.body.classList.add('embedded-mode');
+    }
     const video = document.getElementById('webcam');
     const shutterBtn = document.getElementById('shutterBtn');
     const canvas = document.getElementById('canvas');
