@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendance Camera Capture</title>
+  <!-- Google Fonts: Outfit -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --border-color: rgba(51, 65, 85, 0.5);
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --success: #10b981;
+    }
+    
+    body {
+      font-family: 'Outfit', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-dark);
+      color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    
+    .camera-container {
+      width: 90%;
+      max-width: 500px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+      text-align: center;
+      backdrop-filter: blur(16px);
+      position: relative;
+    }
+    
+    h1 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-top: 0;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #818cf8, #6366f1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    p {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-bottom: 20px;
+    }
+    
+    .viewport {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1); /* Mirror view */
+    }
+    
+    .btn-capture {
+      margin-top: 24px;
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: #fff;
+      border: 6px solid var(--primary);
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s ease-in-out;
+      outline: none;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    }
+    
+    .btn-capture::after {
+      content: '';
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      right: 4px;
+      bottom: 4px;
+      background: #fff;
+      border-radius: 50%;
+      transition: all 0.2s ease-in-out;
+    }
+    
+    .btn-capture:hover {
+      transform: scale(1.08);
+      border-color: var(--primary-hover);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
+    }
+    
+    .btn-capture:active::after {
+      background: var(--success);
+      transform: scale(0.85);
+    }
+
+    /* Flash animation when capture is clicked */
+    .flash-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .flash-active {
+      animation: flash 0.3s ease-out;
+    }
+
+    @keyframes flash {
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="camera-container">
+    <h1>Webcam Capture</h1>
+    <p>Please align your face inside the frame and take a selfie.</p>
+    
+    <div class="viewport">
+      <video id="webcam" autoplay playsinline></video>
+      <div class="flash-overlay" id="flash"></div>
+    </div>
+    
+    <button class="btn-capture" id="shutterBtn" aria-label="Take Photo"></button>
+    <canvas id="canvas" style="display: none;"></canvas>
+  </div>
+
+  <script>
+    const video = document.getElementById('webcam');
+    const shutterBtn = document.getElementById('shutterBtn');
+    const canvas = document.getElementById('canvas');
+    const flash = document.getElementById('flash');
+    
+    let activeStream = null;
+
+    // 1. Initialize Camera immediately on page load
+    navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: 'user',
+        width: { ideal: 640 },
+        height: { ideal: 480 }
+      },
+      audio: false
+    })
+    .then((stream) => {
+      activeStream = stream;
+      video.srcObject = stream;
+    })
+    .catch((err) => {
+      console.error("Camera access error:", err);
+      alert("Error: Camera access was denied or is unavailable. Please check website permissions.");
+      window.close();
+    });
+
+    // 2. Capture Action
+    shutterBtn.addEventListener('click', () => {
+      if (!activeStream) return;
+      
+      // Trigger flash effect
+      flash.classList.add('flash-active');
+      setTimeout(() => flash.classList.remove('flash-active'), 300);
+
+      const width = video.videoWidth || 640;
+      const height = video.videoHeight || 480;
+      
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      
+      // Mirror image output
+      ctx.translate(width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0, width, height);
+      
+      const base64Data = canvas.toDataURL('image/jpeg', 0.85);
+
+      // Stop stream tracks
+      activeStream.getTracks().forEach(track => track.stop());
+
+      // 3. Send image back to parent window and close popup
+      if (window.opener) {
+        window.opener.postMessage({
+          type: 'CAMERA_CAPTURE_SUCCESS',
+          image: base64Data
+        }, '*');
+        
+        // Auto close after 200ms so they see the shutter press complete
+        setTimeout(() => {
+          window.close();
+        }, 200);
+      } else {
+        alert("Parent window not found. Please launch from the Office Attendance App.");
+        window.close();
+      }
+    });
+  </script>
+</body>
+</html>
