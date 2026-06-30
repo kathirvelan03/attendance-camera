@@ -206,20 +206,24 @@
       // Stop stream tracks
       activeStream.getTracks().forEach(track => track.stop());
 
-      // 3. Send image back to parent window and close popup
-      if (window.opener) {
-        window.opener.postMessage({
+      // 3. Send image back to whichever context launched us (popup or iframe)
+      const isEmbedded = window.self !== window.top;
+      const targetWindow = window.opener || (isEmbedded ? window.parent : null);
+      
+      if (targetWindow) {
+        targetWindow.postMessage({
           type: 'CAMERA_CAPTURE_SUCCESS',
           image: base64Data
         }, '*');
-        
-        // Auto close after 200ms so they see the shutter press complete
-        setTimeout(() => {
-          window.close();
-        }, 200);
+      
+        if (window.opener) {
+          // Running as a popup — close it after the shutter animation
+          setTimeout(() => window.close(), 200);
+        }
+        // If embedded as an iframe, the parent page swaps us out — nothing more to do.
       } else {
         alert("Parent window not found. Please launch from the Office Attendance App.");
-        window.close();
+        if (window.opener) window.close();
       }
     });
   </script>
